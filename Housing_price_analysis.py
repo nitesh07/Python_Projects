@@ -39,7 +39,7 @@ def anova_run(df,target_var,categorical_var):
     The function will return one-way ANOVA for categorical variables
     Args:
     df : Pandas Dataframe 
-    target_var: Numeric columns to analyze 
+    target_var: Numeric columns 
     categorical_var: categorical column to group by 
     """
     
@@ -58,3 +58,34 @@ for column in categorical_cols:
 ### finding here is:
 ### higher F-value means the group means are more spread out 
 ### P-Value <0.05 means the categorical feature has significant effect on target
+
+def plot_group_means(df,targeted_var,categorical_var):
+    """
+    Print average target value for each category in categorical variables
+    
+    Args:
+    df : Pandas DataFrame
+    targeted_var : Numeric column (e.g., 'price')
+    categorical_var : Categorical column (e.g., 'furnishingstatus')
+    """
+    
+    group_stats = df.groupby(categorical_var)[targeted_var].agg(['mean', 'count', 'std']).reset_index()
+    
+    # calculate standard error mean (SEM = STD/sqrt(count))
+    group_stats['sem'] = group_stats['std']/(group_stats['count'])**0.5
+    
+    plt.figure(figsize=(10,6))
+    sns.barplot(
+    data = group_stats,
+    x=categorical_var,
+    y='mean',
+    #yerr = group_stats['sem'], # uncomment this to look at standar error 
+    palette='Set2')
+    
+    plt.ylabel(f'Average {targeted_var}')
+    plt.xlabel(f'{categorical_var}')
+    plt.title(f'{targeted_var} by {categorical_var}')
+    plt.show()
+
+# visualize furnishingstatus
+plot_group_means(housing_df, 'price','furnishingstatus')
