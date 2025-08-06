@@ -2,6 +2,13 @@ import pandas as pd
 import numpy as np 
 import seaborn as sns
 import matplotlib.pyplot as plt
+from scipy.stats import f_oneway
+from sklearn.preprocessing import OneHotEncoder
+from sklearn.preprocessing import LabelEncoder
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
+from sklearn.metrics import r2_score
 
 # Loading a dataframe 
 housing_df = pd.read_csv('Housing.csv')
@@ -89,3 +96,44 @@ def plot_group_means(df,targeted_var,categorical_var):
 
 # visualize furnishingstatus
 plot_group_means(housing_df, 'price','furnishingstatus')
+
+# Now we have identified features by looking at correlation and ANOVA , now we will encode categorical variables 
+# now evaluate these vars to check whether they have binary lables, or more then two lables 
+
+# I am using group by counts to have labels and counts
+lst = []
+for column in categorical_cols:
+    lst.append(housing_df.groupby([column])[column].count())
+print(lst)
+
+# one hot encoder by dropping the first column to reduce multicollinearity 
+ohe_drop = OneHotEncoder(drop='first',sparse_output=False)
+housing_df['furnishingstatus']= ohe_drop.fit_transform(housing_df[['furnishingstatus']])
+
+# for binary columns we will use label encoder 
+binary_cols = ['mainroad','guestroom','airconditioning','prefarea']
+
+label_encoder = LabelEncoder()
+for column in binary_cols:
+    housing_df[column] = label_encoder.fit_transform(housing_df[column])
+
+X = housing_df[numrical_cols+binary_cols+['furnishingstatus']] # feature selection 
+# new price for better analysis
+y = housing_df[['price']]/100000
+X_train, X_test, y_train, y_test = train_test_split(X,y,test_size=0.2,random_state=40)
+model = LinearRegression()
+model.fit(X_train, y_train)
+
+y_pred = model.predict(X_test)
+plt.scatter(y_pred,y_pred, c='r',marker = 's',label = 'Prediction')
+plt.scatter(y,y,c='b',marker = 'x',label = 'Actual')
+plt.title('Actual vs. Prediction')
+
+# Accuracy Scores
+mse = mean_squared_error(y_test, y_pred)
+r2 = r2_score(y_test,y_pred)
+
+print(f'mse:{mse: .2f} ')
+print('r2: ',r2)
+
+
